@@ -6,39 +6,39 @@
     "arch": {
         "type": "PSPNet",
         "args": {
-            "backbone": "resnet50",
+            "backbone": "resnet101",
             "freeze_bn": false,
             "freeze_backbone": false
         }
     },
 
     "train_loader": {
-        "type": "VOC",
+        "type": "UrbanLF",
         "args":{
-            "data_dir": "data/VOCtrainval_11-May-2012",
-            "batch_size": 8,
-            "base_size": 400,
-            "crop_size": 380,
+            "data_dir": "/DATA/DATA2/lj/UrbanLF/semantic_segmentation/UrbanLF-Real",
+            "batch_size": 2,
+            "base_size": false,
+            "crop_size": false,
             "augment": true,
             "shuffle": true,
             "scale": true,
             "flip": true,
             "rotate": true,
             "blur": false,
-            "split": "train_aug",
-            "num_workers": 8
+            "split": "train",
+            "num_workers": 0
         }
     },
 
     "val_loader": {
-        "type": "VOC",
+        "type": "UrbanLF",
         "args":{
-            "data_dir": "data/VOCtrainval_11-May-2012",
-            "batch_size": 8,
-            "crop_size": 480,
+            "data_dir": "/DATA/DATA2/lj/UrbanLF/semantic_segmentation/UrbanLF-Real",
+            "batch_size": 2,
+            "crop_size": false,
             "val": true,
             "split": "val",
-            "num_workers": 4
+            "num_workers": 0
         }
     },
 
@@ -47,7 +47,7 @@
         "differential_lr": true,
         "args":{
             "lr": 0.01,
-            "weight_decay": 1e-4,
+            "weight_decay": 5e-4,
             "momentum": 0.9
         }
     },
@@ -62,7 +62,7 @@
     "trainer": {
         "epochs": 80,
         "save_dir": "saved/",
-        "save_period": 10,
+        "save_period": 1,
   
         "monitor": "max Mean_IoU",
         "early_stop": 10,
@@ -72,6 +72,6 @@
         "log_per_iter": 20,
 
         "val": true,
-        "val_per_epochs": 5
+        "val_per_epochs": 1
     }
 }

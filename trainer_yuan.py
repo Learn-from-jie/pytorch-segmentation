@@ -8,10 +8,11 @@ from base import BaseTrainer, DataPrefetcher
 from utils.helpers import colorize_mask
 from utils.metrics import eval_metrics, AverageMeter
 from tqdm import tqdm
+
 class Trainer(BaseTrainer):
     def __init__(self, model, loss, resume, config, train_loader, val_loader=None, train_logger=None, prefetch=True):
         super(Trainer, self).__init__(model, loss, resume, config, train_loader, val_loader, train_logger)
-        torch.backends.cudnn.benchmark = True
+        
         self.wrt_mode, self.wrt_step = 'train_', 0
         self.log_step = config['trainer'].get('log_per_iter', int(np.sqrt(self.train_loader.batch_size)))
         if config['trainer']['log_per_iter']: self.log_step = int(self.log_step / self.train_loader.batch_size) + 1
@@ -45,23 +46,20 @@ class Trainer(BaseTrainer):
         tic = time.time()
         self._reset_metrics()
         tbar = tqdm(self.train_loader, ncols=130)
-        for batch_idx, (data, image1,image2,image3,image4, target) in enumerate(tbar):
+        for batch_idx, (data, target) in enumerate(tbar):
             self.data_time.update(time.time() - tic)
             #data, target = data.to(self.device), target.to(self.device)
             self.lr_scheduler.step(epoch=epoch-1)
+
             # LOSS & OPTIMIZE
             self.optimizer.zero_grad()
-            inputs = (data, image1, image2, image3, image4)
-            output = self.model(inputs)
+            output = self.model(data)
             if self.config['arch']['type'][:3] == 'PSP':
-                # assert output[0].size()[2:] == target.size()[1:]
-                # assert output[0].size()[1] == self.num_classes 
-                # loss = self.loss(output[0], target)
-                # loss += self.loss(output[1], target) * 0.4
-                # output = output[0]
-                assert output.size()[2:] == target.size()[1:]
-                assert output.size()[1] == self.num_classes 
-                loss = self.loss(output, target)
+                assert output[0].size()[2:] == target.size()[1:]
+                assert output[0].size()[1] == self.num_classes 
+                loss = self.loss(output[0], target)
+                loss += self.loss(output[1], target) * 0.4
+                output = output[0]
             else:
                 assert output.size()[2:] == target.size()[1:]
                 assert output.size()[1] == self.num_classes 
@@ -121,11 +119,10 @@ class Trainer(BaseTrainer):
         tbar = tqdm(self.val_loader, ncols=130)
         with torch.no_grad():
             val_visual = []
-            for batch_idx, (data, image1,image2,image3,image4, target) in enumerate(tbar):
+            for batch_idx, (data, target) in enumerate(tbar):
                 #data, target = data.to(self.device), target.to(self.device)
                 # LOSS
-                inputs = (data, image1, image2, image3, image4)
-                output = self.model(inputs)
+                output = self.model(data)
                 loss = self.loss(output, target)
                 if isinstance(self.loss, torch.nn.DataParallel):
                     loss = loss.mean()
@@ -148,16 +145,16 @@ class Trainer(BaseTrainer):
 
             # WRTING & VISUALIZING THE MASKS
             val_img = []
-            # palette = self.train_loader.dataset.palette
-            # for d, t, o in val_visual:
-            #     d = self.restore_transform(d)
-            #     t, o = colorize_mask(t, palette), colorize_mask(o, palette)
-            #     d, t, o = d.convert('RGB'), t.convert('RGB'), o.convert('RGB')
-            #     [d, t, o] = [self.viz_transform(x) for x in [d, t, o]]
-            #     val_img.extend([d, t, o])
-            # val_img = torch.stack(val_img, 0)
-            # val_img = make_grid(val_img.cpu(), nrow=3, padding=5)
-            # self.writer.add_image(f'{self.wrt_mode}/inputs_targets_predictions', val_img, self.wrt_step)
+            palette = self.train_loader.dataset.palette
+            for d, t, o in val_visual:
+                d = self.restore_transform(d)
+                t, o = colorize_mask(t, palette), colorize_mask(o, palette)
+                d, t, o = d.convert('RGB'), t.convert('RGB'), o.convert('RGB')
+                [d, t, o] = [self.viz_transform(x) for x in [d, t, o]]
+                val_img.extend([d, t, o])
+            val_img = torch.stack(val_img, 0)
+            val_img = make_grid(val_img.cpu(), nrow=3, padding=5)
+            self.writer.add_image(f'{self.wrt_mode}/inputs_targets_predictions', val_img, self.wrt_step)
 
             # METRICS TO TENSORBOARD
             self.wrt_step = (epoch) * len(self.val_loader)

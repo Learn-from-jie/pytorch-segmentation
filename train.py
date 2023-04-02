@@ -10,7 +10,6 @@ from utils import losses
 from utils import Logger
 from utils.torchsummary import summary
 from trainer import Trainer
-
 def get_instance(module, name, config, *args):
     # GET THE CORRESPONDING CLASS / FCT 
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])

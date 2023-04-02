@@ -10,7 +10,7 @@ from utils import logger
 import utils.lr_scheduler
 from utils.sync_batchnorm import convert_model
 from utils.sync_batchnorm import DataParallelWithCallback
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 def get_instance(module, name, config, *args):
     # GET THE CORRESPONDING CLASS / FCT 
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])
@@ -30,11 +30,14 @@ class BaseTrainer:
 
         # SETTING THE DEVICE
         self.device, availble_gpus = self._get_available_devices(self.config['n_gpu'])
+        print(availble_gpus)
         if config["use_synch_bn"]:
             self.model = convert_model(self.model)
-            self.model = DataParallelWithCallback(self.model, device_ids=availble_gpus)
+            # self.model = DataParallelWithCallback(self.model, device_ids=availble_gpus)
+            DataParallelWithCallback(self.model, device_ids=[0])
         else:
-            self.model = torch.nn.DataParallel(self.model, device_ids=availble_gpus)
+            # self.model = torch.nn.DataParallel(self.model, device_ids=availble_gpus)
+            self.model = torch.nn.DataParallel(self.model, device_ids=[0])
         self.model.to(self.device)
 
         # CONFIGS
@@ -99,6 +102,7 @@ class BaseTrainer:
         for epoch in range(self.start_epoch, self.epochs+1):
             # RUN TRAIN (AND VAL)
             results = self._train_epoch(epoch)
+            print(results)
             if self.do_validation and epoch % self.config['trainer']['val_per_epochs'] == 0:
                 results = self._valid_epoch(epoch)
 

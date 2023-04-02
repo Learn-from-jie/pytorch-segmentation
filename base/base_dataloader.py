@@ -52,7 +52,11 @@ class DataPrefetcher(object):
         self.dataset = loader.dataset
         self.stream = torch.cuda.Stream()
         self.stop_after = stop_after
-        self.next_input = None
+        self.next_centerimage = None
+        self.next_image1 = None
+        self.next_image2 = None
+        self.next_image3 =  None
+        self.next_image4 = None
         self.next_target = None
         self.device = device
 
@@ -61,25 +65,33 @@ class DataPrefetcher(object):
 
     def preload(self):
         try:
-            self.next_input, self.next_target = next(self.loaditer)
+            self.next_centerimage,self.next_image1, self.next_image2,self.next_image3,self.next_image4,self.next_target = next(self.loaditer)
         except StopIteration:
-            self.next_input = None
-            self.next_target = None
-            return
+            self.next_centerimage = self.next_image1 = self.next_image2 = self.next_image3 =self.next_image4 = None
+            return 
         with torch.cuda.stream(self.stream):
-            self.next_input = self.next_input.cuda(device=self.device, non_blocking=True)
+            self.next_centerimage = self.next_centerimage.cuda(device=self.device, non_blocking=True)
+            self.next_image1 = [i.cuda(device=self.device, non_blocking=True) for i in self.next_image1] 
+            self.next_image2 = [i.cuda(device=self.device, non_blocking=True) for i in self.next_image2] 
+            self.next_image3 = [i.cuda(device=self.device, non_blocking=True) for i in self.next_image3] 
+            self.next_image4 = [i.cuda(device=self.device, non_blocking=True) for i in self.next_image4] 
             self.next_target = self.next_target.cuda(device=self.device, non_blocking=True)
 
     def __iter__(self):
         count = 0
         self.loaditer = iter(self.loader)
+        print(self.loaditer)
         self.preload()
-        while self.next_input is not None:
+        while self.next_centerimage is not None:
             torch.cuda.current_stream().wait_stream(self.stream)
-            input = self.next_input
+            next_centerimage = self.next_centerimage
+            image1 = self.next_image1
+            image2 = self.next_image2
+            image3 = self.next_image3
+            image4 = self.next_image4
             target = self.next_target
             self.preload()
             count += 1
-            yield input, target
+            yield next_centerimage, image1,image2,image3,image4,target
             if type(self.stop_after) is int and (count > self.stop_after):
                 break

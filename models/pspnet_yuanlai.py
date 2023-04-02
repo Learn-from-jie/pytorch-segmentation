@@ -39,7 +39,7 @@ class _PSPModule(nn.Module):
 
 
 class PSPNet(BaseModel):
-    def __init__(self, num_classes, in_channels=3, backbone='resnet101', pretrained=True, use_aux=False, freeze_bn=False, freeze_backbone=False):
+    def __init__(self, num_classes, in_channels=3, backbone='resnet152', pretrained=True, use_aux=True, freeze_bn=False, freeze_backbone=False):
         super(PSPNet, self).__init__()
         norm_layer = nn.BatchNorm2d
         model = getattr(resnet, backbone)(pretrained, norm_layer=norm_layer)
@@ -47,7 +47,6 @@ class PSPNet(BaseModel):
         self.use_aux = use_aux 
 
         self.initial = nn.Sequential(*list(model.children())[:4])
-
         if in_channels != 3:
             self.initial[0] = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.initial = nn.Sequential(*self.initial)
@@ -69,71 +68,21 @@ class PSPNet(BaseModel):
             nn.Dropout2d(0.1),
             nn.Conv2d(m_out_sz//4, num_classes, kernel_size=1)
         )
-        self.centerimagequan = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1,1)),
-            nn.Conv2d(in_channels=2048,out_channels=2048,kernel_size=1,bias=False),
-            nn.Sigmoid()
-        )
-
-        self.other = nn.Sequential(
-            nn.Conv2d(128*36,128,kernel_size=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True)
-        )
-
-        self.shuru = nn.Sequential(
-            nn.Conv2d(2048,2048,kernel_size=1),
-            nn.BatchNorm2d(2048),
-            nn.ReLU(inplace=True)
-        )
 
         initialize_weights(self.master_branch, self.auxiliary_branch)
         if freeze_bn: self.freeze_bn()
         if freeze_backbone: 
             set_trainable([self.initial, self.layer1, self.layer2, self.layer3, self.layer4], False)
 
-    def forward(self, img_all):
-        x = img_all[0]
+    def forward(self, x):
         input_size = (x.size()[2], x.size()[3])
         x = self.initial(x)
         x = self.layer1(x)
         x = self.layer2(x)
         x_aux = self.layer3(x)
         x = self.layer4(x_aux)
-        quanzhong  = self.centerimagequan(x)
-        new_x = torch.mul(quanzhong,x)
-        image1 = img_all[1]
-        image2 = img_all[2]
-        image3 = img_all[3]
-        image4 = img_all[4]
-        image1 = [self.initial(i) for i in image1]
-        image2 = [self.initial(i) for i in image2]
-        image3 = [self.initial(i) for i in image3]
-        image4 = [self.initial(i) for i in image4]
-        p,b,c,h,w = torch.stack(image1, dim=0).shape
-        tensor1 = torch.stack(image1, dim=0)
-        tensor2 = torch.stack(image2, dim=0)
-        tensor3  = torch.stack(image3, dim=0)
-        tensor4 = torch.stack(image4, dim=0)
-        tensor1 = tensor1.permute(1,0,2,3,4).contiguous().view(b,-1,h,w)
-        tensor2 = tensor2.permute(1,0,2,3,4).contiguous().view(b,-1,h,w)
-        tensor3 = tensor3.permute(1,0,2,3,4).contiguous().view(b,-1,h,w)
-        tensor4 = tensor4.permute(1,0,2,3,4).contiguous().view(b,-1,h,w)
-        concat_tensor = torch.cat([tensor1, tensor2, tensor3, tensor4], dim=1)
-        # b ,c ,h,w 
 
-        other = self.other(concat_tensor)
-        other_1 =  self.layer1(other)
-        other_2 =  self.layer2(other_1)
-        other_3 =  self.layer3(other_2)
-        other_4 =  self.layer4(other_3)
-        quanzhong1  =  self.centerimagequan(other_4)
-        new_x2 = torch.mul(quanzhong1,other_4)
-        zong =  new_x + new_x2
-
-        zong = self.shuru(zong)
-
-        output = self.master_branch(zong)
+        output = self.master_branch(x)
         output = F.interpolate(output, size=input_size, mode='bilinear')
         output = output[:, :, :input_size[0], :input_size[1]]
 

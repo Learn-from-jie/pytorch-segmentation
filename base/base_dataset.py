@@ -60,7 +60,7 @@ class BaseDataSet(Dataset):
             label = label[start_h:end_h, start_w:end_w]
         return image, label
 
-    def _augmentation(self, image, label):
+    def _augmentation(self, image,image_1,image_2,image_3,image_4, label):
         h, w, _ = image.shape
         # Scaling, we set the bigger to base size, and the smaller 
         # one is rescaled to maintain the same ratio, if we don't have any obj in the image, re-do the processing
@@ -80,6 +80,10 @@ class BaseDataSet(Dataset):
             center = (w / 2, h / 2)
             rot_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
             image = cv2.warpAffine(image, rot_matrix, (w, h), flags=cv2.INTER_LINEAR)#, borderMode=cv2.BORDER_REFLECT)
+            image_1 = [cv2.warpAffine(i, rot_matrix, (w, h), flags=cv2.INTER_LINEAR)     for i in image_1]
+            image_2 = [cv2.warpAffine(i, rot_matrix, (w, h), flags=cv2.INTER_LINEAR)     for i in image_2]
+            image_3 = [cv2.warpAffine(i, rot_matrix, (w, h), flags=cv2.INTER_LINEAR)     for i in image_3]
+            image_4 = [cv2.warpAffine(i, rot_matrix, (w, h), flags=cv2.INTER_LINEAR)     for i in image_4]
             label = cv2.warpAffine(label, rot_matrix, (w, h), flags=cv2.INTER_NEAREST)#,  borderMode=cv2.BORDER_REFLECT)
 
         # Padding to return the correct crop size
@@ -109,6 +113,10 @@ class BaseDataSet(Dataset):
         if self.flip:
             if random.random() > 0.5:
                 image = np.fliplr(image).copy()
+                image_1 = [np.fliplr(i).copy() for i in image_1]
+                image_2 = [np.fliplr(i).copy()  for i in image_2]
+                image_3 = [np.fliplr(i).copy()  for i in image_3]
+                image_4 = [np.fliplr(i).copy()  for i in image_4]
                 label = np.fliplr(label).copy()
 
         # Gaussian Blud (sigma between 0 and 1.5)
@@ -117,23 +125,33 @@ class BaseDataSet(Dataset):
             ksize = int(3.3 * sigma)
             ksize = ksize + 1 if ksize % 2 == 0 else ksize
             image = cv2.GaussianBlur(image, (ksize, ksize), sigmaX=sigma, sigmaY=sigma, borderType=cv2.BORDER_REFLECT_101)
-        return image, label
+        return image, image_1,image_2,image_3,image_4, label
         
     def __len__(self):
         return len(self.files)
 
     def __getitem__(self, index):
         image, label, image_id = self._load_data(index)
-        if self.val:
-            image, label = self._val_augmentation(image, label)
-        elif self.augment:
-            image, label = self._augmentation(image, label)
+        center_image = image[0][0]
+        image_1  =  image[1]
+        image_2 = image[2]
+        image_3 = image[3]
+        image_4 = image[4]
 
+    # 自定义图片数组，数据类型一定要转为‘uint8’,不然transforms.ToTensor()不会归一化     
+        if self.val:
+            center_image, label = self._val_augmentation(center_image, label)
+        elif self.augment:
+            center_image, image_1,image_2,image_3,image_4,label = self._augmentation(center_image,image_1,image_2,image_3,image_4, label)
         label = torch.from_numpy(np.array(label, dtype=np.int32)).long()
-        image = Image.fromarray(np.uint8(image))
+        center_image = Image.fromarray(np.uint8(center_image))
+        image_1 = [self.normalize(self.to_tensor(Image.fromarray(np.uint8(i))))  for i in  image_1]
+        image_2 = [self.normalize(self.to_tensor(Image.fromarray(np.uint8(i))))  for i in  image_2]
+        image_3 = [self.normalize(self.to_tensor(Image.fromarray(np.uint8(i))))  for i in  image_3]
+        image_4 = [self.normalize(self.to_tensor(Image.fromarray(np.uint8(i))))  for i in  image_4]
         if self.return_id:
-            return  self.normalize(self.to_tensor(image)), label, image_id
-        return self.normalize(self.to_tensor(image)), label
+            return  self.normalize(self.to_tensor(center_image)),image_1,image_2,image_3,image_4,label, image_id
+        return self.normalize(self.to_tensor(center_image)),image_1,image_2,image_3,image_4 ,label
 
     def __repr__(self):
         fmt_str = "Dataset: " + self.__class__.__name__ + "\n"
