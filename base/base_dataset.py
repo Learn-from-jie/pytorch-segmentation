@@ -37,7 +37,7 @@ class BaseDataSet(Dataset):
     def _load_data(self, index):
         raise NotImplementedError
 
-    def _val_augmentation(self, image, label):
+    def _val_augmentation(self, image,image_1,image_2,image_3,image_4, label):
         if self.crop_size:
             h, w = label.shape
             # Scale the smaller side to crop size
@@ -47,6 +47,10 @@ class BaseDataSet(Dataset):
                 h, w = (int(self.crop_size * h / w), self.crop_size)
 
             image = cv2.resize(image, (w, h), interpolation=cv2.INTER_LINEAR)
+            image_1 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_1]
+            image_2 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_2]
+            image_3 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_3]
+            image_4 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_4]
             label = Image.fromarray(label).resize((w, h), resample=Image.NEAREST)
             label = np.asarray(label, dtype=np.int32)
 
@@ -57,22 +61,38 @@ class BaseDataSet(Dataset):
             end_h = start_h + self.crop_size
             end_w = start_w + self.crop_size
             image = image[start_h:end_h, start_w:end_w]
+            image_1 = [i[start_h:end_h, start_w:end_w]  for i in image_1]
+            image_2 = [i[start_h:end_h, start_w:end_w]  for i in image_2]
+            image_3 = [i[start_h:end_h, start_w:end_w]  for i in image_3]
+            image_4 = [i[start_h:end_h, start_w:end_w]  for i in image_4]
             label = label[start_h:end_h, start_w:end_w]
-        return image, label
+        return image, image_1,image_2,image_3,image_4, label
 
     def _augmentation(self, image,image_1,image_2,image_3,image_4, label):
         h, w, _ = image.shape
         # Scaling, we set the bigger to base size, and the smaller 
         # one is rescaled to maintain the same ratio, if we don't have any obj in the image, re-do the processing
-        if self.base_size:
-            if self.scale:
-                longside = random.randint(int(self.base_size*0.5), int(self.base_size*2.0))
-            else:
-                longside = self.base_size
-            h, w = (longside, int(1.0 * longside * w / h + 0.5)) if h > w else (int(1.0 * longside * h / w + 0.5), longside)
-            image = cv2.resize(image, (w, h), interpolation=cv2.INTER_LINEAR)
-            label = cv2.resize(label, (w, h), interpolation=cv2.INTER_NEAREST)
-    
+        # if self.base_size:
+        #     if self.scale:
+        #         longside = random.randint(int(self.base_size*0.5), int(self.base_size*2.0))
+        #     else:
+        #         longside = self.base_size
+        #     h, w = (longside, int(1.0 * longside * w / h + 0.5)) if h > w else (int(1.0 * longside * h / w + 0.5), longside)
+        #     image = cv2.resize(image, (w, h), interpolation=cv2.INTER_LINEAR)
+        #     image_1 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR) for i in image_1]
+        #     image_2 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR) for i in image_2]
+        #     image_3 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR) for i in image_3]
+        #     image_4 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR) for i in image_4]
+        #     label = cv2.resize(label, (w, h), interpolation=cv2.INTER_NEAREST)
+        if self.scale:
+            scales = random.choice([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
+            new_h, new_w = int(h * scales), int(w * scales)
+            image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+            image_1 = [cv2.resize(i, (new_w, new_h), interpolation=cv2.INTER_LINEAR) for i in image_1]
+            image_2 = [cv2.resize(i, (new_w, new_h), interpolation=cv2.INTER_LINEAR) for i in image_2]
+            image_3 = [cv2.resize(i, (new_w, new_h), interpolation=cv2.INTER_LINEAR) for i in image_3]
+            image_4 = [cv2.resize(i, (new_w, new_h), interpolation=cv2.INTER_LINEAR) for i in image_4]
+            label = cv2.resize(label, (new_w, new_h), interpolation=cv2.INTER_NEAREST)  
         h, w, _ = image.shape
         # Rotate the image with an angle between -10 and 10
         if self.rotate:
@@ -98,6 +118,10 @@ class BaseDataSet(Dataset):
                 "borderType": cv2.BORDER_CONSTANT,}
             if pad_h > 0 or pad_w > 0:
                 image = cv2.copyMakeBorder(image, value=0, **pad_kwargs)
+                image_1 = [cv2.copyMakeBorder(i, value=0, **pad_kwargs)     for i in image_1]
+                image_2 = [cv2.copyMakeBorder(i, value=0, **pad_kwargs)     for i in image_2]
+                image_3 = [cv2.copyMakeBorder(i, value=0, **pad_kwargs)     for i in image_3]
+                image_4 = [cv2.copyMakeBorder(i, value=0, **pad_kwargs)     for i in image_4]
                 label = cv2.copyMakeBorder(label, value=0, **pad_kwargs)
             
             # Cropping 
@@ -107,6 +131,10 @@ class BaseDataSet(Dataset):
             end_h = start_h + self.crop_size
             end_w = start_w + self.crop_size
             image = image[start_h:end_h, start_w:end_w]
+            image_1 = [i[start_h:end_h, start_w:end_w]  for i in image_1]
+            image_2 = [i[start_h:end_h, start_w:end_w]  for i in image_2]
+            image_3 = [i[start_h:end_h, start_w:end_w]  for i in image_3]
+            image_4 = [i[start_h:end_h, start_w:end_w]  for i in image_4]
             label = label[start_h:end_h, start_w:end_w]
 
         # Random H flip
@@ -140,7 +168,7 @@ class BaseDataSet(Dataset):
 
     # 自定义图片数组，数据类型一定要转为‘uint8’,不然transforms.ToTensor()不会归一化     
         if self.val:
-            center_image, label = self._val_augmentation(center_image, label)
+            center_image, image_1,image_2,image_3,image_4,label = self._val_augmentation(center_image,image_1,image_2,image_3,image_4, label)
         elif self.augment:
             center_image, image_1,image_2,image_3,image_4,label = self._augmentation(center_image,image_1,image_2,image_3,image_4, label)
         label = torch.from_numpy(np.array(label, dtype=np.int32)).long()
