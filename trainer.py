@@ -54,14 +54,14 @@ class Trainer(BaseTrainer):
             inputs = (data, image1, image2, image3, image4)
             output = self.model(inputs)
             if self.config['arch']['type'][:3] == 'PSP':
-                # assert output[0].size()[2:] == target.size()[1:]
-                # assert output[0].size()[1] == self.num_classes 
-                # loss = self.loss(output[0], target)
-                # loss += self.loss(output[1], target) * 0.4
-                # output = output[0]
-                assert output.size()[2:] == target.size()[1:]
-                assert output.size()[1] == self.num_classes 
-                loss = self.loss(output, target)
+                assert output[0].size()[2:] == target.size()[1:]
+                assert output[0].size()[1] == self.num_classes 
+                loss = self.loss(output[0], target)
+                loss += self.loss(output[1], target) * 0.4
+                output = output[0]
+                # assert output.size()[2:] == target.size()[1:]
+                # assert output.size()[1] == self.num_classes 
+                # loss = self.loss(output, target)
             else:
                 assert output.size()[2:] == target.size()[1:]
                 assert output.size()[1] == self.num_classes 

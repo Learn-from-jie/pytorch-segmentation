@@ -39,7 +39,7 @@ class _PSPModule(nn.Module):
 
 
 class PSPNet(BaseModel):
-    def __init__(self, num_classes, in_channels=3, backbone='resnet101', pretrained=True, use_aux=False, freeze_bn=False, freeze_backbone=False):
+    def __init__(self, num_classes, in_channels=3, backbone='resnet101', pretrained=True, use_aux=True, freeze_bn=False, freeze_backbone=False):
         super(PSPNet, self).__init__()
         norm_layer = nn.BatchNorm2d
         model = getattr(resnet, backbone)(pretrained, norm_layer=norm_layer)
@@ -51,11 +51,16 @@ class PSPNet(BaseModel):
         if in_channels != 3:
             self.initial[0] = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.initial = nn.Sequential(*self.initial)
-        
+        self.initial1 = nn.Sequential(*self.initial)
+
         self.layer1 = model.layer1
+        self.layer11 = model.layer1
         self.layer2 = model.layer2
+        self.layer21 = model.layer2
         self.layer3 = model.layer3
+        self.layer31 = model.layer3
         self.layer4 = model.layer4
+        self.layer41 = model.layer4
 
         self.master_branch = nn.Sequential(
             _PSPModule(m_out_sz, bin_sizes=[1, 2, 3, 6], norm_layer=norm_layer),
@@ -70,6 +75,11 @@ class PSPNet(BaseModel):
             nn.Conv2d(m_out_sz//4, num_classes, kernel_size=1)
         )
         self.centerimagequan = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1,1)),
+            nn.Conv2d(in_channels=2048,out_channels=2048,kernel_size=1,bias=False),
+            nn.Sigmoid()
+        )
+        self.centerimagequan1 = nn.Sequential(
             nn.AdaptiveAvgPool2d((1,1)),
             nn.Conv2d(in_channels=2048,out_channels=2048,kernel_size=1,bias=False),
             nn.Sigmoid()
@@ -106,10 +116,10 @@ class PSPNet(BaseModel):
         image2 = img_all[2]
         image3 = img_all[3]
         image4 = img_all[4]
-        image1 = [self.initial(i) for i in image1]
-        image2 = [self.initial(i) for i in image2]
-        image3 = [self.initial(i) for i in image3]
-        image4 = [self.initial(i) for i in image4]
+        image1 = [self.initial1(i) for i in image1]
+        image2 = [self.initial1(i) for i in image2]
+        image3 = [self.initial1(i) for i in image3]
+        image4 = [self.initial1(i) for i in image4]
         p,b,c,h,w = torch.stack(image1, dim=0).shape
         tensor1 = torch.stack(image1, dim=0)
         tensor2 = torch.stack(image2, dim=0)
@@ -123,11 +133,11 @@ class PSPNet(BaseModel):
         # b ,c ,h,w 
 
         other = self.other(concat_tensor)
-        other_1 =  self.layer1(other)
-        other_2 =  self.layer2(other_1)
-        other_3 =  self.layer3(other_2)
-        other_4 =  self.layer4(other_3)
-        quanzhong1  =  self.centerimagequan(other_4)
+        other_1 =  self.layer11(other)
+        other_2 =  self.layer21(other_1)
+        other_3 =  self.layer31(other_2)
+        other_4 =  self.layer41(other_3)
+        quanzhong1  =  self.centerimagequan1(other_4)
         new_x2 = torch.mul(quanzhong1,other_4)
         zong =  new_x + new_x2
 

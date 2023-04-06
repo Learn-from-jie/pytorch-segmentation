@@ -14,7 +14,6 @@ class Poly(_LRScheduler):
         factor =  pow((1 - 1.0 * T / self.N), 0.9)
         if self.warmup_iters > 0 and T < self.warmup_iters:
             factor = 1.0 * T / self.warmup_iters
-
         self.cur_iter %= self.iters_per_epoch
         self.cur_iter += 1
         return [base_lr * factor for base_lr in self.base_lrs]

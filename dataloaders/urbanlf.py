@@ -29,7 +29,6 @@ class UrbanLFdataset(BaseDataSet):
                 oneimg_dict["image"] = img_all
                 oneimg_dict["label"] = glob(class_name+'/*.npy')[0]
                 self.files.append(oneimg_dict)
-        print(len(self.files))
     
     def _load_data(self, index):
         img_all=[[],[],[],[],[]]

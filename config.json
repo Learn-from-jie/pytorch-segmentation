@@ -7,6 +7,7 @@
         "type": "PSPNet",
         "args": {
             "backbone": "resnet101",
+            "use_aux": true,
             "freeze_bn": false,
             "freeze_backbone": false
         }
@@ -16,7 +17,7 @@
         "type": "UrbanLF",
         "args":{
             "data_dir": "/DATA/DATA2/lj/UrbanLF/semantic_segmentation/UrbanLF-Real",
-            "batch_size": 2,
+            "batch_size": 3,
             "base_size": false,
             "crop_size": 432,
             "augment": true,
@@ -26,7 +27,7 @@
             "rotate": true,
             "blur": false,
             "split": "train",
-            "num_workers": 0
+            "num_workers": 4
         }
     },
 
@@ -34,20 +35,20 @@
         "type": "UrbanLF",
         "args":{
             "data_dir": "/DATA/DATA2/lj/UrbanLF/semantic_segmentation/UrbanLF-Real",
-            "batch_size": 2,
+            "batch_size": 3,
             "crop_size": 432,
             "val": true,
             "split": "val",
-            "num_workers": 0
+            "num_workers": 4
         }
     },
 
     "optimizer": {
         "type": "SGD",
-        "differential_lr": true,
+        "differential_lr": false,
         "args":{
-            "lr": 0.01,
-            "weight_decay": 5e-5,
+            "lr": 0.005,
+            "weight_decay": 5e-4,
             "momentum": 0.9
         }
     },

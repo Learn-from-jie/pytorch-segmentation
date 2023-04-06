@@ -38,34 +38,34 @@ class BaseDataSet(Dataset):
         raise NotImplementedError
 
     def _val_augmentation(self, image,image_1,image_2,image_3,image_4, label):
-        if self.crop_size:
-            h, w = label.shape
-            # Scale the smaller side to crop size
-            if h < w:
-                h, w = (self.crop_size, int(self.crop_size * w / h))
-            else:
-                h, w = (int(self.crop_size * h / w), self.crop_size)
+        # if self.crop_size:
+        #     h, w = label.shape
+        #     # Scale the smaller side to crop size
+        #     if h < w:
+        #         h, w = (self.crop_size, int(self.crop_size * w / h))
+        #     else:
+        #         h, w = (int(self.crop_size * h / w), self.crop_size)
 
-            image = cv2.resize(image, (w, h), interpolation=cv2.INTER_LINEAR)
-            image_1 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_1]
-            image_2 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_2]
-            image_3 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_3]
-            image_4 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_4]
-            label = Image.fromarray(label).resize((w, h), resample=Image.NEAREST)
-            label = np.asarray(label, dtype=np.int32)
+        #     image = cv2.resize(image, (w, h), interpolation=cv2.INTER_LINEAR)
+        #     image_1 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_1]
+        #     image_2 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_2]
+        #     image_3 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_3]
+        #     image_4 = [cv2.resize(i, (w, h), interpolation=cv2.INTER_LINEAR)  for i in image_4]
+        #     label = Image.fromarray(label).resize((w, h), resample=Image.NEAREST)
+        #     label = np.asarray(label, dtype=np.int32)
 
-            # Center Crop
-            h, w = label.shape
-            start_h = (h - self.crop_size )// 2
-            start_w = (w - self.crop_size )// 2
-            end_h = start_h + self.crop_size
-            end_w = start_w + self.crop_size
-            image = image[start_h:end_h, start_w:end_w]
-            image_1 = [i[start_h:end_h, start_w:end_w]  for i in image_1]
-            image_2 = [i[start_h:end_h, start_w:end_w]  for i in image_2]
-            image_3 = [i[start_h:end_h, start_w:end_w]  for i in image_3]
-            image_4 = [i[start_h:end_h, start_w:end_w]  for i in image_4]
-            label = label[start_h:end_h, start_w:end_w]
+        #     # Center Crop
+        #     h, w = label.shape
+        #     start_h = (h - self.crop_size )// 2
+        #     start_w = (w - self.crop_size )// 2
+        #     end_h = start_h + self.crop_size
+        #     end_w = start_w + self.crop_size
+        #     image = image[start_h:end_h, start_w:end_w]
+        #     image_1 = [i[start_h:end_h, start_w:end_w]  for i in image_1]
+        #     image_2 = [i[start_h:end_h, start_w:end_w]  for i in image_2]
+        #     image_3 = [i[start_h:end_h, start_w:end_w]  for i in image_3]
+        #     image_4 = [i[start_h:end_h, start_w:end_w]  for i in image_4]
+        #     label = label[start_h:end_h, start_w:end_w]
         return image, image_1,image_2,image_3,image_4, label
 
     def _augmentation(self, image,image_1,image_2,image_3,image_4, label):
