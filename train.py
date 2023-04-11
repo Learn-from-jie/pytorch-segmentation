@@ -9,7 +9,7 @@ import math
 from utils import losses
 from utils import Logger
 from utils.torchsummary import summary
-from trainer import Trainer
+from trainer_copy import Trainer
 def get_instance(module, name, config, *args):
     # GET THE CORRESPONDING CLASS / FCT 
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])
@@ -26,7 +26,7 @@ def main(config, resume):
     print(f'\n{model}\n')
 
     # LOSS
-    loss = getattr(losses, config['loss'])(ignore_index = config['ignore_index'])
+    loss = getattr(losses, config['loss'])(ignore_index = -100)
 
     # TRAINING
     trainer = Trainer(

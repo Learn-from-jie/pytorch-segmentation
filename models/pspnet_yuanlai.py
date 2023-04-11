@@ -38,9 +38,9 @@ class _PSPModule(nn.Module):
         return output
 
 
-class PSPNet(BaseModel):
+class PSPNet1(BaseModel):
     def __init__(self, num_classes, in_channels=3, backbone='resnet152', pretrained=True, use_aux=True, freeze_bn=False, freeze_backbone=False):
-        super(PSPNet, self).__init__()
+        super(PSPNet1, self).__init__()
         norm_layer = nn.BatchNorm2d
         model = getattr(resnet, backbone)(pretrained, norm_layer=norm_layer)
         m_out_sz = model.fc.in_features
@@ -81,7 +81,6 @@ class PSPNet(BaseModel):
         x = self.layer2(x)
         x_aux = self.layer3(x)
         x = self.layer4(x_aux)
-
         output = self.master_branch(x)
         output = F.interpolate(output, size=input_size, mode='bilinear')
         output = output[:, :, :input_size[0], :input_size[1]]

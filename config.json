@@ -1,10 +1,10 @@
 {
     "name": "PSPNet",
     "n_gpu": 1,
-    "use_synch_bn": false,
+    "use_synch_bn": true,
 
     "arch": {
-        "type": "PSPNet",
+        "type": "PSPNet1",
         "args": {
             "backbone": "resnet101",
             "use_aux": true,
@@ -14,12 +14,12 @@
     },
 
     "train_loader": {
-        "type": "UrbanLF",
+        "type": "UrbanLF1",
         "args":{
             "data_dir": "/DATA/DATA2/lj/UrbanLF/semantic_segmentation/UrbanLF-Real",
             "batch_size": 3,
             "base_size": false,
-            "crop_size": 432,
+            "crop_size": 400,
             "augment": true,
             "shuffle": true,
             "scale": true,
@@ -32,11 +32,11 @@
     },
 
     "val_loader": {
-        "type": "UrbanLF",
+        "type": "UrbanLF1",
         "args":{
             "data_dir": "/DATA/DATA2/lj/UrbanLF/semantic_segmentation/UrbanLF-Real",
             "batch_size": 3,
-            "crop_size": 432,
+            "crop_size": 400,
             "val": true,
             "split": "val",
             "num_workers": 4
@@ -47,26 +47,26 @@
         "type": "SGD",
         "differential_lr": false,
         "args":{
-            "lr": 0.005,
+            "lr": 0.005,   
             "weight_decay": 5e-4,
             "momentum": 0.9
         }
     },
 
     "loss": "CrossEntropyLoss2d",
-    "ignore_index": 255,
+    "ignore_index": -100,
     "lr_scheduler": {
         "type": "Poly",
         "args": {}
     },
 
     "trainer": {
-        "epochs": 80,
+        "epochs": 150,
         "save_dir": "saved/",
-        "save_period": 10,
+        "save_period": 50,
   
         "monitor": "max Mean_IoU",
-        "early_stop": 40,
+        "early_stop": 100,
         
         "tensorboard": true,
         "log_dir": "saved/runs",

@@ -10,7 +10,6 @@ from utils import logger
 import utils.lr_scheduler
 from utils.sync_batchnorm import convert_model
 from utils.sync_batchnorm import DataParallelWithCallback
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 def get_instance(module, name, config, *args):
     # GET THE CORRESPONDING CLASS / FCT 
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])
@@ -33,11 +32,11 @@ class BaseTrainer:
         print(availble_gpus)
         if config["use_synch_bn"]:
             self.model = convert_model(self.model)
-            # self.model = DataParallelWithCallback(self.model, device_ids=availble_gpus)
-            DataParallelWithCallback(self.model, device_ids=[0])
+            self.model = DataParallelWithCallback(self.model, device_ids=availble_gpus)
+            # DataParallelWithCallback(self.model, device_ids=[0])
         else:
-            # self.model = torch.nn.DataParallel(self.model, device_ids=availble_gpus)
-            self.model = torch.nn.DataParallel(self.model, device_ids=[0])
+            self.model = torch.nn.DataParallel(self.model, device_ids=availble_gpus)
+            # self.model = torch.nn.DataParallel(self.model, device_ids=[0])
         self.model.to(self.device)
 
         # CONFIGS
